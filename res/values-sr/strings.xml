@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The MIT License (MIT)
+    
+    Copyright (c) 2010-2014 Carnegie Mellon University
+    
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+    
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+    
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+    THE SOFTWARE.
+-->
+
+<resources>
+
+    <string name="ask_QuitConfirmation">Kuit? Da li ste sigurni?</string>
+
+    <string name="btn_Match">Sledeći</string>
+    <string name="btn_NoMatch">Nema Pobednik</string>
+
+    <string name="choice_NumUsers">%d korisnika</string>
+
+    <string name="error_AllMembersMustUpgrade">Neki članovi koriste stariju verziju; svi članovi moraju da koriste najmanje %s.</string>
+    <string name="error_AllMembersMustUpgradeBadPushToken">Svi članovi moraju nadogradnju, neki koriste starije formate registracije push.</string>
+    <string name="error_CorrectYourInternetConnection">Internet nije dostupan, proverite postavke.</string>
+    <string name="error_ExchangeProtocolTimeoutExceeded">Ekchange timeout premašio. Počnite razmenu ponovo.</string>
+    <string name="error_HttpCode">Server HTTP greška: %d</string>
+    <string name="error_InvalidCommitVerify">Netačni podaci nalaze u razmeni. Počnite razmenu ponovo.</string>
+    <string name="error_InvalidCommonUserId">Unesite pozitivan ceo broj.</string>
+    <string name="error_LocalGroupCommitDiffer">Vi ste prijavili razlike u frazama. Počnite razmenu ponovo.</string>
+    <string name="error_MinUsersRequired">Najmanje %d članova moraju da razmenjuju podatke.</string>
+    <string name="error_MoreDataThanUsers">Neočekivani podaci nalaze u razmeni. Počnite razmenu ponovo.</string>
+    <string name="error_NoDataToExchange">Razmena nedostaje tražene podatke.</string>
+    <string name="error_NoWordListSelected">Morate da izaberete jednu od fraza pre nego što nastavite.</string>
+    <string name="error_OtherGroupCommitDiffer">Neko je prijavio razliku u frazama. Počnite razmenu ponovo.</string>
+    <string name="error_OutOfMemoryError">Memorija je suviše nizak da završi ovu operaciju.</string>
+    <string name="error_ServerAppMessage">Server Message: %s</string>
+    <string name="error_ServerAppMessageCStr">Server Message: %s</string>
+    <string name="error_ServerNotResponding">Nema odgovora od servera.</string>
+    <string name="error_TimeoutWaitingForAllMembers">Isteklo čeka neki članovi grupe da dodate podatke.</string>
+    <string name="error_WebCancelledByUser">Korisnik je otkazao zahtev servera.</string>
+
+    <string name="help_size">Izaberite broj ljudi koji pokušavaju da razmenjuju podatke zajedno i pritisnite OK.</string>
+    <string name="help_userid">Ovaj broj na ovom ekranu se koristi da stvori jedinstvenu grupu korisnika. Pregledajte brojeve na ekranima svih korisnika, onda svi korisnici treba da unesete isti najmanji broj i pritisnite OK.</string>
+    <string name="help_verify">Sada, vi mora da odgovara jedan od ovih 3-reči fraze sa svim korisnicima. Svaki korisnik mora izabrati istu zajedničku frazu, pa pritisnite Nekt.</string>
+
+    <string name="label_CompareScreensNDevices">Uporedite ekrane na %s uređajima.</string>
+    <string name="label_NumericModeHint">Ne-engleski</string>
+    <string name="label_PromptInstruct">Ovaj broj se koristi da stvori jedinstvenu grupu korisnika. Uporedi, a zatim unesite najmanji broj među svim korisnicima.</string>
+    <string name="label_ReceivedNItems">primio %d stavki</string>
+    <string name="label_UserIdHint">Najniži</string>
+    <string name="label_VerifyInstruct">Svi telefoni mora da odgovara jedan od 3-reči fraze. Uporedi, a zatim izabrati odgovarajući izraz.</string>
+
+    <string name="lib_name">SafeSlinger Ekchange</string>
+
+    <string name="prog_CollectingOthersCommitVerify">čeka verifikaciju od svih članova…</string>
+    <string name="prog_CollectingOthersItems">čeka svim korisnicima da se pridruže…</string>
+    <string name="prog_ConstructingGroupKey">izgradnje ključ grupe…</string>
+    <string name="prog_RequestingUserId">traži članstvo…</string>
+
+    <string name="title_size">Koliko korisnika u zamenu?</string>
+    <string name="title_userid">Grupisanje</string>
+    <string name="title_verify">Verifikovati</string>
+
+</resources>
