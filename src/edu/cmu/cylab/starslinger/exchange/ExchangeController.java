@@ -269,17 +269,15 @@ public class ExchangeController {
                 offset += 4;
                 tmpBuf = new byte[theirs.limit() - offset];
                 theirs.get(tmpBuf, 0, theirs.remaining());
-                if (mNumUsersCommit == 0) {
-                    return handleError(new String(tmpBuf));
-                }
+                if (mNumUsersCommit > 0) {
+                    usridList = appendServerUserIds(usridList, tmpBuf);
+                    commitList = appendServerBytes(commitList, tmpBuf);
 
-                usridList = appendServerUserIds(usridList, tmpBuf);
-                commitList = appendServerBytes(commitList, tmpBuf);
-
-                if (mNumUsersCommit > mNumUsers) {
-                    return handleError(R.string.error_MoreDataThanUsers);
-                } else if (mNumUsersCommit == mNumUsers) {
-                    commitRet = 1;
+                    if (mNumUsersCommit > mNumUsers) {
+                        return handleError(R.string.error_MoreDataThanUsers);
+                    } else if (mNumUsersCommit == mNumUsers) {
+                        commitRet = 1;
+                    }
                 }
 
                 // make sure we aren't waiting forever
@@ -352,16 +350,15 @@ public class ExchangeController {
                 offset += 4;
                 byte tmpBuf[] = new byte[theirs.limit() - offset];
                 theirs.get(tmpBuf, 0, theirs.remaining());
-                if (mNumUsersData == 0)
-                    return handleError(new String(tmpBuf));
+                if (mNumUsersData > 0) {
+                    usridList = appendServerUserIds(usridList, tmpBuf);
+                    dataList = appendServerBytes(dataList, tmpBuf);
 
-                usridList = appendServerUserIds(usridList, tmpBuf);
-                dataList = appendServerBytes(dataList, tmpBuf);
-
-                if (mNumUsersData > mNumUsers) {
-                    return handleError(R.string.error_MoreDataThanUsers);
-                } else if (mNumUsersData == mNumUsers) {
-                    dataRet = 1;
+                    if (mNumUsersData > mNumUsers) {
+                        return handleError(R.string.error_MoreDataThanUsers);
+                    } else if (mNumUsersData == mNumUsers) {
+                        dataRet = 1;
+                    }
                 }
 
                 // make sure we aren't waiting forever
@@ -544,16 +541,15 @@ public class ExchangeController {
                 offset += 4;
                 byte tmpBuf[] = new byte[theirs.limit() - offset];
                 theirs.get(tmpBuf, 0, theirs.remaining());
-                if (mNumUsersSigs == 0)
-                    return handleError(new String(tmpBuf));
+                if (mNumUsersSigs > 0) {
+                    usridList = appendServerUserIds(usridList, tmpBuf);
+                    sigsList = appendServerBytes(sigsList, tmpBuf);
 
-                usridList = appendServerUserIds(usridList, tmpBuf);
-                sigsList = appendServerBytes(sigsList, tmpBuf);
-
-                if (mNumUsersSigs > mNumUsers) {
-                    return handleError(R.string.error_MoreDataThanUsers);
-                } else if (mNumUsersSigs == mNumUsers) {
-                    dataRet = 1;
+                    if (mNumUsersSigs > mNumUsers) {
+                        return handleError(R.string.error_MoreDataThanUsers);
+                    } else if (mNumUsersSigs == mNumUsers) {
+                        dataRet = 1;
+                    }
                 }
 
                 // make sure we aren't waiting forever
@@ -723,16 +719,15 @@ public class ExchangeController {
                 offset += 4;
                 byte tmpBuf[] = new byte[theirs.limit() - offset];
                 theirs.get(tmpBuf, 0, theirs.remaining());
-                if (mNumUsersMatchNonces == 0)
-                    return handleError(new String(tmpBuf));
+                if (mNumUsersMatchNonces > 0) {
+                    usridList = appendServerUserIds(usridList, tmpBuf);
+                    nonceList = appendServerBytes(nonceList, tmpBuf);
 
-                usridList = appendServerUserIds(usridList, tmpBuf);
-                nonceList = appendServerBytes(nonceList, tmpBuf);
-
-                if (mNumUsersMatchNonces > mNumUsers) {
-                    return handleError(R.string.error_MoreDataThanUsers);
-                } else if (mNumUsersMatchNonces == mNumUsers) {
-                    dataRet = 1;
+                    if (mNumUsersMatchNonces > mNumUsers) {
+                        return handleError(R.string.error_MoreDataThanUsers);
+                    } else if (mNumUsersMatchNonces == mNumUsers) {
+                        dataRet = 1;
+                    }
                 }
 
                 // make sure we aren't waiting forever
