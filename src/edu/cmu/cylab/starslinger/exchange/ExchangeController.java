@@ -249,6 +249,10 @@ public class ExchangeController {
             long getCommitWait = System.currentTimeMillis();
             int attempt = 0;
             while (commitRet == 0) {
+                if (isCanceled()) {
+                    return false;
+                }
+
                 long intervalStart = System.currentTimeMillis();
                 attempt++;
 
@@ -328,6 +332,10 @@ public class ExchangeController {
             long getDataWait = System.currentTimeMillis();
             int attempt = 0;
             while (dataRet == 0) {
+                if (isCanceled()) {
+                    return false;
+                }
+
                 long intervalStart = System.currentTimeMillis();
                 attempt++;
 
@@ -470,6 +478,10 @@ public class ExchangeController {
             long getSigsWait = System.currentTimeMillis();
             int attempt = 0;
             while (dataRet == 0) {
+                if (isCanceled()) {
+                    return false;
+                }
+
                 long intervalStart = System.currentTimeMillis();
                 attempt++;
 
@@ -523,6 +535,10 @@ public class ExchangeController {
             long getSigsWait = System.currentTimeMillis();
             int attempt = 0;
             while (dataRet == 0) {
+                if (isCanceled()) {
+                    return false;
+                }
+
                 long intervalStart = System.currentTimeMillis();
                 attempt++;
 
@@ -603,6 +619,10 @@ public class ExchangeController {
             long getKeyNodesWait = System.currentTimeMillis();
             int attempt = 0;
             while (curNodePos < mNumUsers) {
+                if (isCanceled()) {
+                    return false;
+                }
+
                 long intervalStart = System.currentTimeMillis();
                 attempt++;
 
@@ -701,6 +721,10 @@ public class ExchangeController {
             long getMatchNoncesWait = System.currentTimeMillis();
             int attempt = 0;
             while (dataRet == 0) {
+                if (isCanceled()) {
+                    return false;
+                }
+
                 long intervalStart = System.currentTimeMillis();
                 attempt++;
 
