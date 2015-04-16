@@ -1,6 +1,4 @@
-Travis CI Build Status
-
-[![Build Status](https://travis-ci.org/SafeSlingerProject/SafeSlinger-Android.png?branch=master)](https://travis-ci.org/SafeSlingerProject/SafeSlinger-Android)
+[![Build Status](https://travis-ci.org/SafeSlingerProject/exchange-android.png?branch=master)](https://travis-ci.org/SafeSlingerProject/exchange-android)
 
 SafeSlinger Android Client
 ===================
