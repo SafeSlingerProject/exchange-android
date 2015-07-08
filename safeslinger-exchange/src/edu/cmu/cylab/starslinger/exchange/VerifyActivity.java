@@ -27,7 +27,7 @@ package edu.cmu.cylab.starslinger.exchange;
 
 import java.security.SecureRandom;
 import java.util.Locale;
-
+import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Dialog;
 import android.content.Context;
@@ -66,6 +66,7 @@ public class VerifyActivity extends BaseActivity {
     private byte[] mDecoyHash2;
     private int mNumUsers;
 
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuItem helpItem = menu.add(0, MENU_HELP, 0, "Help").setIcon(
@@ -88,6 +89,7 @@ public class VerifyActivity extends BaseActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
