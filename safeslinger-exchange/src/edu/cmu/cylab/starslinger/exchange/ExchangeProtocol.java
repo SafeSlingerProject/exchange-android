@@ -73,6 +73,7 @@ public class ExchangeProtocol {
     private int mVersion;
     private int mLatestServerVersion;
     private int mLowestClientVersion;
+    private CommType mCommMode;
 
     private int[] usridList = null;
     private byte[] commitList = null;
@@ -85,7 +86,9 @@ public class ExchangeProtocol {
     private int[] orderedIDs = null;
     private byte[][] pubKeyNodes = null;
 
-    public ExchangeProtocol() {
+    public ExchangeProtocol(CommType mode) {
+        mCommMode = mode;
+
         mNonceMatch = new byte[ExchangeConfig.HASH_LEN];
         mNonceWrong = new byte[ExchangeConfig.HASH_LEN];
         mDecoyHash1 = new byte[3];
@@ -118,6 +121,10 @@ public class ExchangeProtocol {
     public boolean startProtocol(int numUsers, byte[] data) throws InvalidKeyException,
             NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException,
             BadPaddingException, InvalidAlgorithmParameterException, NoDataToExchangeException {
+
+        if (mCommMode == CommType.DIRECT) {
+            return false;
+        }
 
         if (data == null) {
             throw new NoDataToExchangeException();
@@ -185,23 +192,23 @@ public class ExchangeProtocol {
      * @throws NoDataToExchangeException
      */
     public byte[] outMessageCommit(boolean postCommit) throws NoDataToExchangeException {
-
         if (mCommitB == null || mCommitB.length == 0) {
             throw new NoDataToExchangeException();
         }
-        usridList = null;
-        commitList = null;
+        if (postCommit) {
+            usridList = null;
+            commitList = null;
 
-        mNumUsersCommit = 0;
-        mLowestClientVersion = mVersion;
-        ByteBuffer ours = ByteBuffer.allocate(4 + 4 + 4 + mCommitB.length);
-        ours.putInt(1).putInt(mUsrId).putInt(mCommitB.length).put(mCommitB);
+            mNumUsersCommit = 0;
+            mLowestClientVersion = mVersion;
+            ByteBuffer ours = ByteBuffer.allocate(4 + 4 + 4 + mCommitB.length);
+            ours.putInt(1).putInt(mUsrId).putInt(mCommitB.length).put(mCommitB);
 
-        // add just our own to start
-        mNumUsersCommit = 1;
-        usridList = appendServerUserIds(usridList, ours.array());
-        commitList = appendServerBytes(commitList, ours.array());
-
+            // add just our own to start
+            mNumUsersCommit = 1;
+            usridList = appendServerUserIds(usridList, ours.array());
+            commitList = appendServerBytes(commitList, ours.array());
+        }
         ByteBuffer msg = ByteBuffer.allocate(4 + 4 + 4 + 4 + (usridList.length * 4)
                 + mCommitB.length);
         msg.putInt(mVersion);
@@ -267,25 +274,27 @@ public class ExchangeProtocol {
      * number, list of data we did not get yet
      */
     public byte[] outMessageData(boolean postData) {
-        usridList = null;
-        dataList = null;
-        mNumUsersData = 0;
-        byte[] data;
+        byte[] data = new byte[0];
+        if (postData) {
+            usridList = null;
+            dataList = null;
+            mNumUsersData = 0;
 
-        ByteBuffer join = ByteBuffer
-                .allocate(mCommitA.length + mDHHalfKey.length + mEncData.length);
-        join.put(mCommitA);
-        join.put(mDHHalfKey);
-        join.put(mEncData);
-        data = join.array();
+            ByteBuffer join = ByteBuffer.allocate(mCommitA.length + mDHHalfKey.length
+                    + mEncData.length);
+            join.put(mCommitA);
+            join.put(mDHHalfKey);
+            join.put(mEncData);
+            data = join.array();
 
-        ByteBuffer ours = ByteBuffer.allocate(4 + 4 + 4 + data.length);
-        ours.putInt(1).putInt(mUsrId).putInt(data.length).put(data);
+            ByteBuffer ours = ByteBuffer.allocate(4 + 4 + 4 + data.length);
+            ours.putInt(1).putInt(mUsrId).putInt(data.length).put(data);
 
-        // add just our own to start
-        mNumUsersData = 1;
-        usridList = appendServerUserIds(usridList, ours.array());
-        dataList = appendServerBytes(dataList, ours.array());
+            // add just our own to start
+            mNumUsersData = 1;
+            usridList = appendServerUserIds(usridList, ours.array());
+            dataList = appendServerBytes(dataList, ours.array());
+        }
 
         ByteBuffer msg = ByteBuffer.allocate(4 + 4 + 4 + (usridList.length * 4) + data.length);
         msg.putInt(mVersion);
@@ -329,8 +338,6 @@ public class ExchangeProtocol {
     private void endValidationData() throws MoreDataThanUsersException, HashValidationException,
             InvalidCommitVerifyException, AssignDecoysException {
 
-        mPackedData = dataList;
-
         boolean match = false;
         int lowest = Integer.MAX_VALUE;
         for (int i = 0; i < usridList.length; i++) {
@@ -345,6 +352,8 @@ public class ExchangeProtocol {
         if (lowest != mUsrIdLink) {
             throw new MoreDataThanUsersException();
         }
+
+        mPackedData = dataList;
 
         // again save the data in a new group info in case one of the signatures
         // is invalid
@@ -377,34 +386,34 @@ public class ExchangeProtocol {
      * ours), actual sig number, list of signatures we did not get yet
      */
     public byte[] outMessageSig(boolean postSig, boolean matched) {
+        byte[] sig = new byte[0];
+        if (postSig) {
+            usridList = null;
+            sigsList = null;
+            mNumUsersSigs = 0;
 
-        usridList = null;
-        sigsList = null;
-        mNumUsersSigs = 0;
-        byte[] sig = null;
+            if (matched) {
+                // you say the hashes match so send the match signature
+                ByteBuffer sigGood = ByteBuffer.allocate(ExchangeConfig.HASH_LEN
+                        + ExchangeConfig.HASH_LEN);
+                sigGood.put(mHashMatch).put(mHashWrong);
+                sig = sigGood.array();
+            } else {
+                // send the no signature and quit
+                ByteBuffer sigBad = ByteBuffer.allocate(ExchangeConfig.HASH_LEN
+                        + ExchangeConfig.HASH_LEN);
+                sigBad.put(mHashHashMatch).put(mNonceWrong);
+                sig = sigBad.array();
+            }
 
-        if (matched) {
-            // you say the hashes match so send the match signature
-            ByteBuffer sigGood = ByteBuffer.allocate(ExchangeConfig.HASH_LEN
-                    + ExchangeConfig.HASH_LEN);
-            sigGood.put(mHashMatch).put(mHashWrong);
-            sig = sigGood.array();
-        } else {
-            // send the no signature and quit
-            ByteBuffer sigBad = ByteBuffer.allocate(ExchangeConfig.HASH_LEN
-                    + ExchangeConfig.HASH_LEN);
-            sigBad.put(mHashHashMatch).put(mNonceWrong);
-            sig = sigBad.array();
+            ByteBuffer ours = ByteBuffer.allocate(12 + sig.length);
+            ours.putInt(1).putInt(mUsrId).putInt(sig.length).put(sig);
+
+            // add just our own to start
+            mNumUsersSigs = 1;
+            usridList = appendServerUserIds(usridList, ours.array());
+            sigsList = appendServerBytes(sigsList, ours.array());
         }
-
-        ByteBuffer ours = ByteBuffer.allocate(12 + sig.length);
-        ours.putInt(1).putInt(mUsrId).putInt(sig.length).put(sig);
-
-        // add just our own to start
-        mNumUsersSigs = 1;
-        usridList = appendServerUserIds(usridList, ours.array());
-        sigsList = appendServerBytes(sigsList, ours.array());
-
         ByteBuffer msg = ByteBuffer.allocate(4 + 4 + 4 + (usridList.length * 4) + sig.length);
         msg.putInt(mVersion);
         msg.putInt(mUsrId);
@@ -595,21 +604,23 @@ public class ExchangeProtocol {
     public byte[] outMessageMatch(boolean postNonce) throws InvalidKeyException,
             NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException,
             BadPaddingException, InvalidAlgorithmParameterException {
-        usridList = null;
-        nonceList = null;
-        mNumUsersMatchNonces = 0;
+        byte[] nonceData = new byte[0];
+        if (postNonce) {
+            usridList = null;
+            nonceList = null;
+            mNumUsersMatchNonces = 0;
 
-        // encrypt nonce with shared secret
-        byte[] nonceData = mCrypto.encryptNonce(mNonceMatch, mDHSecretKey);
+            // encrypt nonce with shared secret
+            nonceData = mCrypto.encryptNonce(mNonceMatch, mDHSecretKey);
 
-        ByteBuffer ours = ByteBuffer.allocate(12 + nonceData.length);
-        ours.putInt(1).putInt(mUsrId).putInt(nonceData.length).put(nonceData);
+            ByteBuffer ours = ByteBuffer.allocate(12 + nonceData.length);
+            ours.putInt(1).putInt(mUsrId).putInt(nonceData.length).put(nonceData);
 
-        // add just our own to start
-        mNumUsersMatchNonces = 1;
-        usridList = appendServerUserIds(usridList, ours.array());
-        nonceList = appendServerBytes(nonceList, ours.array());
-
+            // add just our own to start
+            mNumUsersMatchNonces = 1;
+            usridList = appendServerUserIds(usridList, ours.array());
+            nonceList = appendServerBytes(nonceList, ours.array());
+        }
         ByteBuffer msg = ByteBuffer.allocate(4 + 4 + 4 + (usridList.length * 4) + nonceData.length);
         msg.putInt(mVersion);
         msg.putInt(mUsrId);

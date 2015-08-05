@@ -53,7 +53,7 @@ public class ExchangeController {
         mErrMsg = null;
         mError = false;
 
-        protocol = new ExchangeProtocol();
+        protocol = new ExchangeProtocol(CommType.BATCH);
         mConnect = ConnectionEngine.getServerInstance(ctx, mHost);
     }
 
