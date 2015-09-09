@@ -627,7 +627,9 @@ public class ExchangeActivity extends BaseActivity {
                 if (mHandler != null) {
                     mHandler.removeCallbacks(mUpdateReceivedProg);
                 }
-                mProt.endProtocol();
+                if (mProt != null) {
+                    mProt.endProtocol();
+                }
             }
         };
         t.start();
@@ -644,7 +646,9 @@ public class ExchangeActivity extends BaseActivity {
                 if (mHandler != null) {
                     mHandler.removeCallbacks(mUpdateReceivedProg);
                 }
-                mProt.endProtocol();
+                if (mProt != null) {
+                    mProt.endProtocol();
+                }
             }
         };
         t.start();
