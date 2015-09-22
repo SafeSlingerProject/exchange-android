@@ -481,8 +481,7 @@ public class ExchangeProtocol {
         }
     }
 
-    public void nodesPrep() throws InvalidKeyException, NoSuchAlgorithmException,
-            InvalidKeySpecException, IllegalStateException {
+    public void nodesPrep() {
         mNumUsersKeyNodes = 0;
         pub = null;
         excgHalfKeys = mGrpInfo.sortAllHalfKeys();
@@ -544,12 +543,18 @@ public class ExchangeProtocol {
     }
 
     public void inMessageNode(byte[] msg) {
-        ByteBuffer ours = ByteBuffer.wrap(msg);
-        mLatestServerVersion = ours.getInt();
-        int offset = 0;
+
+        // can send node? then send node.
+        if (pos < 2) {
+            ByteBuffer ours = ByteBuffer.wrap(msg);
+            mLatestServerVersion = ours.getInt();
+        }
 
         // can recv mynode? then recv node.
         if (pos >= 2 && mynode == null) {
+            ByteBuffer ours = ByteBuffer.wrap(msg);
+            int offset = 0;
+            mLatestServerVersion = ours.getInt();
             offset += 4;
             mNumUsersKeyNodes = ours.getInt(); // grand total
             offset += 4;

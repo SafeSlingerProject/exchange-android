@@ -82,60 +82,66 @@ public abstract class ConnectionEngine {
      * send commitment, receives unique short user id
      */
     public byte[] assign_user(byte[] msg) throws ExchangeException {
-
+        if (msg == null || msg.length == 0) {
+            return null;
+        }
         byte[] resp = assignUser(msg);
         handleResponseExceptions(resp, 0);
-
         Log.i(TAG, "User id created");
         return resp;
     }
 
     public byte[] sync_commits(byte[] msg) throws ExchangeException {
-
+        if (msg == null || msg.length == 0) {
+            return null;
+        }
         handleTimeoutException();
         byte[] resp = syncUsers(msg);
         handleResponseExceptions(resp, 0);
-
         Log.i(TAG, "User created");
         return resp;
     }
 
     public byte[] sync_data(byte[] msg) throws ExchangeException {
-
+        if (msg == null || msg.length == 0) {
+            return null;
+        }
         handleTimeoutException();
         byte[] resp = syncData(msg);
         handleResponseExceptions(resp, 0);
-
         Log.i(TAG, "User updated");
         return resp;
     }
 
     public byte[] sync_signatures(byte[] msg) throws ExchangeException {
-
+        if (msg == null || msg.length == 0) {
+            return null;
+        }
         handleTimeoutException();
         byte[] resp = syncSignatures(msg);
         handleResponseExceptions(resp, 0);
-
         Log.i(TAG, "Signature sent");
         return resp;
     }
 
     public byte[] sync_keynodes(byte[] msg) throws ExchangeException {
-
+        if (msg == null || msg.length == 0) {
+            return null;
+        }
         handleTimeoutException();
         byte[] resp = syncKeyNodes(msg);
         handleResponseExceptions(resp, 2);
-
         Log.i(TAG, "key node sent");
         return resp;
     }
 
     public byte[] sync_match(byte[] msg) throws ExchangeException {
-
+        if (msg == null || msg.length == 0) {
+            return null;
+        }
         handleTimeoutException();
         byte[] resp = syncMatch(msg);
         handleResponseExceptions(resp, 0);
-
         Log.i(TAG, "Match nonce sent");
         return resp;
     }
