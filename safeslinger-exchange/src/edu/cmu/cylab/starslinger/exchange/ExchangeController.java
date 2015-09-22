@@ -365,11 +365,9 @@ public class ExchangeController {
 
             protocol.nodesPrep();
 
-            int curNodePos = 2;
-
             long getKeyNodesWait = System.currentTimeMillis();
             int attempt = 0;
-            while (curNodePos < protocol.getNumUsers()) {
+            while (protocol.getCurNodePos() < protocol.getNumUsers()) {
                 if (isCanceled()) {
                     return false;
                 }
@@ -377,25 +375,12 @@ public class ExchangeController {
                 long intervalStart = System.currentTimeMillis();
                 attempt++;
 
-                // can send node? then send node.
-                if (protocol.nodeMustSend()) {
-                    // get syncNodes message for server
-                    byte[] req = protocol.outMessageNodeRoot(curNodePos);
+                byte[] req = protocol.outMessageNode();
 
-                    // send(node)
-                    byte[] res = mConnect.put_keynode(req);
-                }
+                byte[] res = mConnect.sync_keynodes(req);
 
-                // can recv mynode? then recv node.
-                if (protocol.nodeMustRecv()) {
-                    byte[] req = protocol.outMessageNodeNode();
-
-                    // mynode = recv()
-                    byte[] res = mConnect.get_keynode(req);
-
-                    // parse syncNodes message from server
-                    protocol.inMessageNodeNode(res);
-                }
+                // parse syncNodes message from server
+                protocol.inMessageNode(res);
 
                 // make sure we aren't waiting forever
                 if ((System.currentTimeMillis() - getKeyNodesWait) > ExchangeConfig.MSSVR_TIMEOUT) {
@@ -404,7 +389,7 @@ public class ExchangeController {
 
                 // "get" should poll with exponential backoff, "put" should post
                 // immediately, not wait...
-                if (protocol.nodeMustRecv()) {
+                if (protocol.nodeMustBackoff()) {
                     doSleepBackoff(attempt, intervalStart, getKeyNodesWait);
                 }
             }

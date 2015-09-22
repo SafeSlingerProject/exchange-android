@@ -120,23 +120,13 @@ public abstract class ConnectionEngine {
         return resp;
     }
 
-    public byte[] put_keynode(byte[] msg) throws ExchangeException {
+    public byte[] sync_keynodes(byte[] msg) throws ExchangeException {
 
         handleTimeoutException();
         byte[] resp = syncKeyNodes(msg);
         handleResponseExceptions(resp, 2);
 
         Log.i(TAG, "key node sent");
-        return resp;
-    }
-
-    public byte[] get_keynode(byte[] msg) throws ExchangeException {
-
-        handleTimeoutException();
-        byte[] resp = syncKeyNodes(msg);
-        handleResponseExceptions(resp, 2);
-
-        Log.i(TAG, "key node requested");
         return resp;
     }
 

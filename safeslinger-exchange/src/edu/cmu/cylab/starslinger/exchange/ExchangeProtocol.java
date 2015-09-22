@@ -81,10 +81,12 @@ public class ExchangeProtocol {
     private byte[] sigsList = null;
     private byte[] nonceList = null;
 
-    private int myNodePos = -1;
+    private byte[] pub = null;
     private byte[][] excgHalfKeys = null;
     private int[] orderedIDs = null;
-    private byte[][] pubKeyNodes = null;
+    private int pos = -1;
+    private int curNodePos;
+    private byte[] mynode = null;
 
     public ExchangeProtocol(CommType mode) {
         mCommMode = mode;
@@ -482,117 +484,103 @@ public class ExchangeProtocol {
     public void nodesPrep() throws InvalidKeyException, NoSuchAlgorithmException,
             InvalidKeySpecException, IllegalStateException {
         mNumUsersKeyNodes = 0;
-        byte[] pub = null;
+        pub = null;
         excgHalfKeys = mGrpInfo.sortAllHalfKeys();
         orderedIDs = mGrpInfo.getOrderedIDs();
-        pubKeyNodes = new byte[excgHalfKeys.length][];
-        myNodePos = -1;
+        pos = -1;
 
         for (int i = 0; i < orderedIDs.length; i++) {
             if (orderedIDs[i] == mUsrId) {
-                myNodePos = i;
+                pos = i;
                 break;
             }
         }
 
         // assign pub when A or B
-        if (myNodePos < 2) {
-            pub = excgHalfKeys[myNodePos == 0 ? 1 : 0];
-            pubKeyNodes[1] = pub;
+        if (pos < 2) {
+            pub = excgHalfKeys[pos == 0 ? 1 : 0];
         }
 
-        if (myNodePos < 2) {
-            int curNodePos = 2;
-            while (curNodePos < mNumUsers) {
-                // can calculate node? then calc node.
-                // node = getnode(pub)
-                pub = mCrypto.createNodeKey(pub);
-
-                pubKeyNodes[curNodePos] = pub;
-
-                pub = excgHalfKeys[curNodePos];
-                curNodePos++;
-            }
-        }
-    }
-
-    public boolean nodeMustSend() {
-        return myNodePos < 2;
+        curNodePos = 2;
+        mynode = null;
     }
 
     /**
-     * this method is used by members to post one public key node. send: node to
-     * submit (user id, node length, node);
+     * Send: this method is used by members to post one public key node. send:
+     * node to submit (user id, node length, node). Recv: this method is used by
+     * members to discover if their key node node has been submitted. receive:
+     * the total nodes number for themselves (0 or 1), our own key node if
+     * available.
      */
-    public byte[] outMessageNodeRoot(int pos) {
-        ByteBuffer msg = ByteBuffer.allocate(4 + 4 + 4 + 4 + pubKeyNodes[pos].length);
-        msg.putInt(mVersion);
-        msg.putInt(mUsrId);
-        msg.putInt(orderedIDs[pos]);
-        msg.putInt(pubKeyNodes[pos].length);
-        msg.put(pubKeyNodes[pos]);
-
-        return msg.array();
-    }
-
-    public boolean nodeMustRecv() {
-        return myNodePos >= 2;
-    }
-
-    /**
-     * this method is used by members to discover if their key node node has
-     * been submitted. receive: the total nodes number for themselves (0 or 1),
-     * our own key node if available.
-     */
-    public byte[] outMessageNodeNode() {
-        ByteBuffer msg = ByteBuffer.allocate(4 + 4);
-        msg.putInt(mVersion);
-        msg.putInt(mUsrId);
-
-        return msg.array();
-    }
-
-    public void inMessageNodeNode(byte[] msg) throws InvalidKeyException, NoSuchAlgorithmException,
+    public byte[] outMessageNode() throws InvalidKeyException, NoSuchAlgorithmException,
             InvalidKeySpecException, IllegalStateException {
+        ByteBuffer msg = ByteBuffer.allocate(0);
+
+        // can calculate node? then calc node.
+        if (pos < 2 || mynode != null) {
+            // node = getnode(pub)
+            pub = mCrypto.createNodeKey(pub);
+        }
+
+        // can send node? then send node.
+        if (pos < 2) {
+            // send(node)
+            msg = ByteBuffer.allocate(4 + 4 + 4 + 4 + pub.length);
+            msg.putInt(mVersion);
+            msg.putInt(mUsrId);
+            msg.putInt(orderedIDs[curNodePos]);
+            msg.putInt(pub.length);
+            msg.put(pub);
+        }
+
+        // can recv mynode? then recv node.
+        if (pos >= 2 && mynode == null) {
+            msg = ByteBuffer.allocate(4 + 4);
+            msg.putInt(mVersion);
+            msg.putInt(mUsrId);
+        }
+
+        return msg.array();
+    }
+
+    public void inMessageNode(byte[] msg) {
         ByteBuffer ours = ByteBuffer.wrap(msg);
-        byte[] pub = null;
-        byte[] mynode = null;
-        int curNodePos = -1;
-
-        int offset = 0;
         mLatestServerVersion = ours.getInt();
-        offset += 4;
-        mNumUsersKeyNodes = ours.getInt(); // grand total
-        offset += 4;
-        if (mNumUsersKeyNodes == 1) {
-            ours.getInt();
+        int offset = 0;
+
+        // can recv mynode? then recv node.
+        if (pos >= 2 && mynode == null) {
             offset += 4;
-            mynode = new byte[ours.limit() - offset];
-            ours.get(mynode, 0, ours.remaining());
+            mNumUsersKeyNodes = ours.getInt(); // grand total
+            offset += 4;
+            if (mNumUsersKeyNodes == 1) {
+                ours.getInt();
+                offset += 4;
+                mynode = new byte[ours.limit() - offset];
+                ours.get(mynode, 0, ours.remaining());
 
-            // mynode ok? then pub = mynode
-            if (mynode != null) {
-                curNodePos = myNodePos + 1;
-                pub = mynode;
-
-                while (curNodePos < mNumUsers) {
-                    // can calculate node? then calc node.
-                    // node = getnode(pub)
-                    pub = mCrypto.createNodeKey(pub);
-
-                    pubKeyNodes[curNodePos] = pub;
-
-                    pub = excgHalfKeys[curNodePos];
-                    curNodePos++;
+                // mynode ok? then pub = mynode
+                if (mynode != null) {
+                    curNodePos = pos + 1;
+                    pub = mynode;
                 }
             }
         }
+        // can assign pub?
+        else {
+            pub = excgHalfKeys[curNodePos];
+            curNodePos++;
+        }
+    }
+
+    public boolean nodeMustBackoff() {
+        return pos >= 2 || mynode == null;
     }
 
     public void nodesFinal() throws InvalidKeyException, InvalidKeySpecException,
             NoSuchAlgorithmException, IllegalStateException {
         // secret=getsecret(pub)
-        mDHSecretKey = mCrypto.createFinalKey(pubKeyNodes[pubKeyNodes.length - 1]);
+        mDHSecretKey = mCrypto.createFinalKey(pub);
     }
 
     /**
@@ -908,6 +896,10 @@ public class ExchangeProtocol {
 
     public void setNumUsers(int numUsers) {
         mNumUsers = numUsers;
+    }
+
+    public int getCurNodePos() {
+        return curNodePos;
     }
 
     public int getUserId() {
