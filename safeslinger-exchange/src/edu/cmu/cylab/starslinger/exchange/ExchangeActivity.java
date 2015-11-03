@@ -37,15 +37,14 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
+import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -64,7 +63,6 @@ public class ExchangeActivity extends BaseActivity {
     private Intent mCurrIntent = null;
     private int mCurrView = 0;
     private static ExchangeController mProt;
-    private byte[][] mExcgMemData;
     private static boolean mLaunched = false;
     private Handler mHandler;
     private static ProgressDialog mDlgProg;
@@ -126,6 +124,7 @@ public class ExchangeActivity extends BaseActivity {
         }
     };
 
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
@@ -161,9 +160,6 @@ public class ExchangeActivity extends BaseActivity {
         // only initialize on new requests, this activity has very little ui
         if (savedInstanceState == null) {
 
-            // new call from 3rd party, proceed
-            mProt = new ExchangeController(this);
-
             // check for required Bundle values
             if (mUserData == null || mUserData.length == 0) {
                 showError(getString(R.string.error_NoDataToExchange));
@@ -185,55 +181,34 @@ public class ExchangeActivity extends BaseActivity {
                 return;
             }
 
-            mProt.setData(mUserData);
-            mProt.setHostName(mHostName);
+            // new call from 3rd party, proceed
+            mProt = new ExchangeController(this, mHostName);
 
             // initialize exchange
-            if (handled(mProt.doInitialize())) {
-                if (handled(mProt.doGenerateCommitment())) {
-                    if (numUsersIn == 0) {
-                        // default mode, uninitialized number of users
-                        // so ask how many users?
-                        showGroupSizePicker();
+            if (numUsersIn == 0) {
+                // default mode, uninitialized number of users
+                // so ask how many users?
+                showGroupSizePicker();
 
-                    } else if (numUsersIn >= ExchangeConfig.MIN_USERS
-                            && numUsersIn <= ExchangeConfig.MAX_USERS) {
-                        // optional mode, 3rd party will pass in num users
-                        mProt.setNumUsers(numUsersIn);
-                        AssignUserTask assignUser = new AssignUserTask();
-                        assignUser.execute(new String());
-                        // TODO: option can be removed for combo-lock UI
-
-                    } else {
-                        // reset and error, number out of range
-                        mProt.setNumUsers(0);
-                        showNote(String.format(getString(R.string.error_MinUsersRequired),
-                                ExchangeConfig.MIN_USERS));
-                        showGroupSizePicker();
-                    }
+            } else if (numUsersIn >= ExchangeConfig.MIN_USERS
+                    && numUsersIn <= ExchangeConfig.MAX_USERS) {
+                // optional mode, 3rd party will pass in num users
+                if (handled(mProt.doGenerateCommitment(numUsersIn, mUserData))) {
+                    AssignUserTask assignUser = new AssignUserTask();
+                    assignUser.execute(new String());
+                    // TODO: option can be removed for combo-lock UI
                 }
+            } else {
+                // reset and error, number out of range
+                showNote(String.format(getString(R.string.error_MinUsersRequired),
+                        ExchangeConfig.MIN_USERS));
+                showGroupSizePicker();
             }
         }
 
         if (!mLaunched) {
             mLaunched = true;
         }
-    }
-
-    public static boolean callerHasBlueToothPermission(Context ctx) {
-        String PERMISSION_BLUETOOTH = "android.permission.BLUETOOTH";
-        String PERMISSION_BLUETOOTH_ADMIN = "android.permission.BLUETOOTH_ADMIN";
-        PackageManager pm = ctx.getPackageManager();
-        int bt = pm.checkPermission(PERMISSION_BLUETOOTH, ctx.getPackageName());
-        int bt_admin = pm.checkPermission(PERMISSION_BLUETOOTH_ADMIN, ctx.getPackageName());
-        return (bt == PackageManager.PERMISSION_GRANTED && bt_admin == PackageManager.PERMISSION_GRANTED);
-    }
-
-    public static boolean callerHasNfcPermission(Context ctx) {
-        String PERMISSION_NFC = "android.permission.NFC";
-        PackageManager pm = ctx.getPackageManager();
-        int nfc = pm.checkPermission(PERMISSION_NFC, ctx.getPackageName());
-        return (nfc == PackageManager.PERMISSION_GRANTED);
     }
 
     @Override
@@ -353,16 +328,15 @@ public class ExchangeActivity extends BaseActivity {
     }
 
     private void doVerifyFinalMatchDone() {
-        mExcgMemData = mProt.getGroupData().sortOthersDataNew(mProt.getUserId());
-        // decrypt the data with each others match nonce
         try {
-            final byte[][] decryptMemData = mProt.decryptMemData(mExcgMemData, mProt.getUserId());
+            byte[][] decryptMemData = mProt.decryptMemData();
 
             Intent data = new Intent();
             for (int i = 0; i < decryptMemData.length; i++) {
                 data.putExtra(extra.MEMBER_DATA + i, decryptMemData[i]);
             }
             showExitImportOK(data);
+
         } catch (InvalidKeyException e) {
             showError(e.getLocalizedMessage());
         } catch (NoSuchAlgorithmException e) {
@@ -539,6 +513,10 @@ public class ExchangeActivity extends BaseActivity {
         showQuestion(getString(R.string.ask_QuitConfirmation), resultCode);
     }
 
+    private void showError(int resId) {
+        showError(getString(resId));
+    }
+
     private void showError(String msg) {
         Bundle args = new Bundle();
         args.putString(extra.RESID_MSG, msg);
@@ -615,8 +593,10 @@ public class ExchangeActivity extends BaseActivity {
             public void onClick(DialogInterface dialog, int id) {
                 if (mProt.getNumUsers() > 0) {
                     dialog.dismiss();
-                    AssignUserTask assignUser = new AssignUserTask();
-                    assignUser.execute(new String());
+                    if (handled(mProt.doGenerateCommitment(mProt.getNumUsers(), mUserData))) {
+                        AssignUserTask assignUser = new AssignUserTask();
+                        assignUser.execute(new String());
+                    }
                 } else {
                     // reset and error
                     mProt.setNumUsers(0);
@@ -645,7 +625,9 @@ public class ExchangeActivity extends BaseActivity {
                 if (mHandler != null) {
                     mHandler.removeCallbacks(mUpdateReceivedProg);
                 }
-                mProt.endProtocol();
+                if (mProt != null) {
+                    mProt.endProtocol();
+                }
             }
         };
         t.start();
@@ -662,7 +644,9 @@ public class ExchangeActivity extends BaseActivity {
                 if (mHandler != null) {
                     mHandler.removeCallbacks(mUpdateReceivedProg);
                 }
-                mProt.endProtocol();
+                if (mProt != null) {
+                    mProt.endProtocol();
+                }
             }
         };
         t.start();

@@ -1,3 +1,6 @@
+
+package edu.cmu.cylab.starslinger.exchange;
+
 /*
  * The MIT License (MIT)
  * 
@@ -22,33 +25,11 @@
  * THE SOFTWARE.
  */
 
-package edu.cmu.cylab.starslinger.exchange;
+public class HashValidationException extends Exception {
 
-import org.apache.http.conn.ClientConnectionManager;
-import org.apache.http.conn.scheme.PlainSocketFactory;
-import org.apache.http.conn.scheme.Scheme;
-import org.apache.http.conn.scheme.SchemeRegistry;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
-import org.apache.http.params.HttpParams;
+    /**
+     * 
+     */
+    private static final long serialVersionUID = -5775186718413796686L;
 
-import android.content.Context;
-
-public class CheckedHttpClient extends DefaultHttpClient {
-    final Context mContext;
-
-    public CheckedHttpClient(HttpParams hparms, Context context) {
-        super(hparms);
-        mContext = context;
-    }
-
-    @Override
-    protected ClientConnectionManager createClientConnectionManager() {
-        SchemeRegistry registry = new SchemeRegistry();
-
-        registry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
-        registry.register(new Scheme("https", new CheckedSSLSocketFactory(), 443));
-
-        return new ThreadSafeClientConnManager(getParams(), registry);
-    }
 }

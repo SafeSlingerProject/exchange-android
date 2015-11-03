@@ -30,6 +30,8 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Locale;
 
+import android.util.Log;
+
 /**
  * This class handles managing the data blobs the server sends back to the
  * client. This includes parsing the data, checking commitments, calculating
@@ -37,6 +39,7 @@ import java.util.Locale;
  */
 public class GroupData implements Comparable<GroupData> {
 
+    private static final String TAG = ExchangeConfig.LOG_TAG;
     protected int mGrpSize;
     protected int[] mUsrIds;
     protected byte[][] mGrpData;
@@ -74,27 +77,26 @@ public class GroupData implements Comparable<GroupData> {
      *            the data in userXData.
      */
     public int save_ID_data(byte[] packedInfo) {
-
-        ByteBuffer buffer = ByteBuffer.wrap(packedInfo);
-
-        int numEntry = buffer.getInt();
-        if (numEntry > mGrpSize)
-            return -1;
-
-        // len gives us the number of entries in the usrID and grpData lists
-        // append enough entries to hold the expected data
-        mUsrIds = new int[numEntry];
-        mGrpData = new byte[numEntry][];
-
-        // future versions should do some checking to ensure
-        // enough bytes are present and anything else smart
         try {
+            ByteBuffer buffer = ByteBuffer.wrap(packedInfo);
+
+            int numEntry = buffer.getInt();
+            if (numEntry > mGrpSize) {
+                return -1;
+            }
+            // len gives us the number of entries in the usrID and grpData lists
+            // append enough entries to hold the expected data
+            mUsrIds = new int[numEntry];
+            mGrpData = new byte[numEntry][];
+
+            // do some checking to ensure enough bytes are present
             int currEntry = 0;
             while (currEntry < numEntry) {
                 mUsrIds[currEntry] = buffer.getInt();
                 int sizeData = buffer.getInt();
-                if (sizeData < 0)
+                if (sizeData < ExchangeConfig.HASH_LEN) {
                     return -1;
+                }
                 mGrpData[currEntry] = new byte[sizeData];
                 buffer.get(mGrpData[currEntry], 0, sizeData);
                 currEntry = currEntry + 1;
@@ -113,26 +115,25 @@ public class GroupData implements Comparable<GroupData> {
      * an update such that the userIDs already exist.
      */
     public int save_data(byte[] packedInfo) {
-        ByteBuffer buffer = ByteBuffer.wrap(packedInfo);
-
-        int numEntry = buffer.getInt();
-        if (numEntry != mGrpSize)
-            return -1;
-
-        // now we're updating data, so return error if not enough spaces
-        if ((numEntry > mUsrIds.length) || (numEntry > mGrpData.length))
-            return -1;
-
-        // future versions should do some checking to ensure
-        // enough bytes are present and anything else smart
         try {
+            ByteBuffer buffer = ByteBuffer.wrap(packedInfo);
+
+            int numEntry = buffer.getInt();
+            if (numEntry != mGrpSize) {
+                return -1;
+            }
+            // now we're updating data, so return error if not enough spaces
+            if ((numEntry > mUsrIds.length) || (numEntry > mGrpData.length)) {
+                return -1;
+            }
+            // do some checking to ensure enough bytes are present
             int currEntry = 0;
             while (currEntry < numEntry) {
                 int currID = buffer.getInt();
                 int sizeData = buffer.getInt();
-                if (sizeData < 0)
+                if (sizeData < ExchangeConfig.HASH_LEN) {
                     return -1;
-
+                }
                 int position = currEntry;
                 // find the appropriate usrID
                 // assume server always sends them in the same order,
@@ -169,12 +170,12 @@ public class GroupData implements Comparable<GroupData> {
      *         missing from the new group
      */
     public int isDecommitUpdate(GroupData other) {
-        if (mGrpSize > other.grpSize())
+        if (mGrpSize > other.grpSize()) {
             return 1;
-
-        if (mGrpSize < other.grpSize())
+        }
+        if (mGrpSize < other.grpSize()) {
             return -2;
-
+        }
         for (int i = 0; i < mGrpSize; i++) {
             int currID = mUsrIds[i];
 
@@ -188,14 +189,24 @@ public class GroupData implements Comparable<GroupData> {
                 }
                 j = j + 1;
             }
-            if (otherPos == -1)
+            if (otherPos == -1) {
                 return -3;
-
+            }
             // verify the other data hashes to self's data
-            byte[] ourHash = new byte[ExchangeConfig.HASH_LEN];
-            ByteBuffer.wrap(mGrpData[i]).get(ourHash, 0, ExchangeConfig.HASH_LEN);
-            if (!Arrays.equals(ourHash, CryptoAccess.computeSha3Hash(other.grpData()[otherPos])))
+            byte[] decoHash = new byte[ExchangeConfig.HASH_LEN];
+            try {
+                ByteBuffer.wrap(mGrpData[i]).get(decoHash, 0, ExchangeConfig.HASH_LEN);
+            } catch (BufferUnderflowException e) {
                 return -1;
+            } catch (IndexOutOfBoundsException e) {
+                return -1;
+            }
+            byte[] compHash = CryptoAccess.computeSha3Hash(other.grpData()[otherPos]);
+            if (!Arrays.equals(decoHash, compHash)) {
+                Log.e(TAG, "decoHash: " + byteArrayToHex(decoHash));
+                Log.e(TAG, "compHash: " + byteArrayToHex(compHash));
+                return -1;
+            }
         }
         // if all of the data existed and hash correctly
         return 0;
@@ -211,12 +222,12 @@ public class GroupData implements Comparable<GroupData> {
      *         user missing from the new group
      */
     public int isSignatureUpdate(GroupData other) {
-        if (mGrpSize > other.grpSize())
+        if (mGrpSize > other.grpSize()) {
             return 1;
-
-        if (mGrpSize != other.grpSize())
+        }
+        if (mGrpSize != other.grpSize()) {
             return -2;
-
+        }
         for (int i = 0; i < mGrpSize; i++) {
             int currID = mUsrIds[i];
 
@@ -230,34 +241,42 @@ public class GroupData implements Comparable<GroupData> {
                 }
                 j = j + 1;
             }
-            if (otherPos == -1)
+            if (otherPos == -1) {
                 return -3;
-
+            }
             // verify the other data hashes to self's data
             byte[] hashA, hashB;
             byte[] otherCommit1 = new byte[ExchangeConfig.HASH_LEN];
             byte[] otherCommit2 = new byte[ExchangeConfig.HASH_LEN];
             byte[] thisCommit = new byte[ExchangeConfig.HASH_LEN];
-            ByteBuffer.wrap(other.grpData()[otherPos])
-                    .get(otherCommit1, 0, ExchangeConfig.HASH_LEN)
-                    .get(otherCommit2, 0, ExchangeConfig.HASH_LEN);
-            ByteBuffer.wrap(mGrpData[i]).get(thisCommit, 0, ExchangeConfig.HASH_LEN);
-
+            try {
+                ByteBuffer.wrap(other.grpData()[otherPos])
+                        .get(otherCommit1, 0, ExchangeConfig.HASH_LEN)
+                        .get(otherCommit2, 0, ExchangeConfig.HASH_LEN);
+                ByteBuffer.wrap(mGrpData[i]).get(thisCommit, 0, ExchangeConfig.HASH_LEN);
+            } catch (BufferUnderflowException e) {
+                return -1;
+            } catch (IndexOutOfBoundsException e) {
+                return -1;
+            }
             // wrong
             hashA = otherCommit1;
             hashB = CryptoAccess.computeSha3Hash(otherCommit2);
             // if the "wrong" signature was correct return 2
             byte[] otherCommitW = CryptoAccess.computeSha3Hash2(hashA, hashB);
-            if (Arrays.equals(thisCommit, otherCommitW))
+            if (Arrays.equals(thisCommit, otherCommitW)) {
                 return 2;
-
+            }
             // match
             hashA = CryptoAccess.computeSha3Hash(otherCommit1);
             hashB = otherCommit2;
             // if the signature is invalid return -1
             byte[] otherCommitM = CryptoAccess.computeSha3Hash2(hashA, hashB);
-            if (!Arrays.equals(thisCommit, otherCommitM))
+            if (!Arrays.equals(thisCommit, otherCommitM)) {
+                Log.e(TAG, "descCommit: " + byteArrayToHex(thisCommit));
+                Log.e(TAG, "compCommit: " + byteArrayToHex(otherCommitM));
                 return -1;
+            }
         }
         // if all of the data existed and hash correctly
         return 0;
@@ -273,8 +292,9 @@ public class GroupData implements Comparable<GroupData> {
         // first determine the order based on user ID
         int[] orderedIDs = getOrderedIDs();
         int dataLen = 0;
-        for (int x = 0; x < mGrpData.length; x++)
+        for (int x = 0; x < mGrpData.length; x++) {
             dataLen += mGrpData[x].length;
+        }
         ByteBuffer allData = ByteBuffer.allocate(dataLen);
 
         // now concatenate the data in the specified order
@@ -420,9 +440,9 @@ public class GroupData implements Comparable<GroupData> {
      */
     @Override
     public int compareTo(GroupData other) {
-        if (mGrpSize != other.grpSize())
+        if (mGrpSize != other.grpSize()) {
             return -1;
-
+        }
         for (int i = 0; i < mGrpSize; i++) {
             int currID = mUsrIds[i];
 
@@ -434,12 +454,13 @@ public class GroupData implements Comparable<GroupData> {
                     j = other.grpSize();
                 }
             }
-            if (otherPos == -1)
+            if (otherPos == -1) {
                 return -1;
-
+            }
             // verify the data is the same
-            if (mGrpData[i] != other.grpData()[otherPos])
+            if (mGrpData[i] != other.grpData()[otherPos]) {
                 return -1;
+            }
         }
         // if everyone was the same return 0
         return 0;
@@ -465,4 +486,13 @@ public class GroupData implements Comparable<GroupData> {
         return retVal;
     }
 
+    /***
+     * Debug only, as this method is very slow.
+     */
+    public static String byteArrayToHex(byte[] a) {
+        StringBuilder sb = new StringBuilder(a.length * 2);
+        for (byte b : a)
+            sb.append(String.format("%02x", b & 0xff));
+        return sb.toString();
+    }
 }

@@ -25,21 +25,21 @@ package edu.cmu.cylab.starslinger.exchange;
  * THE SOFTWARE.
  */
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpVersion;
-import org.apache.http.StatusLine;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.HttpResponseException;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.ClientConnectionManager;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.impl.client.BasicResponseHandler;
-import org.apache.http.params.BasicHttpParams;
-import org.apache.http.params.HttpParams;
-import org.apache.http.params.HttpProtocolParams;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 
 import android.os.SystemClock;
 import android.text.TextUtils;
@@ -57,7 +57,7 @@ public class WebEngine extends ConnectionEngine {
     private String mUrlPrefix = ExchangeConfig.HTTPURL_PREFIX;
     private String mHost;
     private String mUrlSuffix = ExchangeConfig.HTTPURL_SUFFIX;
-    private HttpClient mHttpClient;
+    private HttpsURLConnection mConn;
 
     public void setHost(String host) {
         mHost = host;
@@ -66,41 +66,58 @@ public class WebEngine extends ConnectionEngine {
     private byte[] doPost(String uri, byte[] requestBody) throws ExchangeException {
         mCancelable = false;
 
-        // sets up parameters
-        HttpParams params = new BasicHttpParams();
-        HttpProtocolParams.setVersion(params, HttpVersion.HTTP_1_1);
-        HttpProtocolParams.setContentCharset(params, "utf-8");
-        params.setBooleanParameter("http.protocol.expect-continue", false);
-
-        if (mHttpClient == null) {
-            mHttpClient = new CheckedHttpClient(params, mCtx);
-        }
-        HttpPost httppost = new HttpPost(uri);
-        BasicResponseHandler responseHandler = new BasicResponseHandler();
         byte[] reqData = null;
-        HttpResponse response = null;
         long startTime = SystemClock.elapsedRealtime();
         int statCode = 0;
         String statMsg = "";
         String error = "";
+        boolean responseAvailable = false;
 
         try {
-            // Execute HTTP Post Request
-            httppost.addHeader("Content-Type", "application/octet-stream");
-            httppost.setEntity(new ByteArrayEntity(requestBody));
-            response = mHttpClient.execute(httppost);
-            reqData = responseHandler.handleResponse(response).getBytes("8859_1");
+            // sets up parameters
+            KeyStore trusted = null;
+            SSLContext context = SSLContext.getInstance("TLS");
+            context.init(null, new TrustManager[] {
+                new CheckedX509TrustManager(trusted)
+            }, null);
+            URL url = new URL(uri);
+            mConn = (HttpsURLConnection) url.openConnection();
+            mConn.setSSLSocketFactory(context.getSocketFactory());
+            mConn.setRequestMethod("POST");
+            mConn.setRequestProperty("Content-Type", "application/octet-stream; charset=utf-8");
+            mConn.setRequestProperty("Expect", "100-continue");
+            mConn.setDoOutput(true);
+            mConn.setDoInput(true);
 
+            // Execute HTTP Post Request
+            OutputStream os = mConn.getOutputStream();
+            os.write(requestBody);
+            os.flush();
+            os.close();
+            responseAvailable = true;
+
+            // handle issues
+            statCode = mConn.getResponseCode();
+            statMsg = mConn.getResponseMessage();
+            if (statCode != HttpURLConnection.HTTP_OK) {
+                // contains useful data for users, do not swallow, handle
+                // properly
+                error = (String.format(mCtx.getString(R.string.error_HttpCode), statCode) + ", \'"
+                        + statMsg + "\'");
+            } else {
+                // read output
+                InputStream is = ((mConn.getInputStream()));
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                while ((bytesRead = is.read(buffer)) != -1) {
+                    baos.write(buffer, 0, bytesRead);
+                }
+                reqData = baos.toByteArray();
+                is.close();
+            }
         } catch (UnsupportedEncodingException e) {
             error = e.getLocalizedMessage() + " (" + e.getClass().getSimpleName() + ")";
-        } catch (HttpResponseException e) {
-            // this subclass of java.io.IOException contains useful data for
-            // users, do not swallow, handle properly
-            e.printStackTrace();
-            statCode = e.getStatusCode();
-            statMsg = e.getLocalizedMessage();
-            error = (String.format(mCtx.getString(R.string.error_HttpCode), statCode) + ", \'"
-                    + statMsg + "\'");
         } catch (java.io.IOException e) {
             // just show a simple Internet connection error, so as not to
             // confuse users
@@ -110,18 +127,19 @@ public class WebEngine extends ConnectionEngine {
             error = e.getLocalizedMessage() + " (" + e.getClass().getSimpleName() + ")";
         } catch (OutOfMemoryError e) {
             error = mCtx.getString(R.string.error_OutOfMemoryError);
+        } catch (KeyManagementException e) {
+            error = e.getLocalizedMessage() + " (" + e.getClass().getSimpleName() + ")";
+        } catch (NoSuchAlgorithmException e) {
+            error = e.getLocalizedMessage() + " (" + e.getClass().getSimpleName() + ")";
+        } catch (KeyStoreException e) {
+            error = e.getLocalizedMessage() + " (" + e.getClass().getSimpleName() + ")";
         } finally {
             long msDelta = SystemClock.elapsedRealtime() - startTime;
-            if (response != null) {
-                StatusLine status = response.getStatusLine();
-                if (status != null) {
-                    statCode = status.getStatusCode();
-                    statMsg = status.getReasonPhrase();
-                }
+            if (responseAvailable) {
+                Log.d(TAG, uri + ", " + requestBody.length + "b sent, "
+                        + (reqData != null ? reqData.length : 0) + "b recv, " + statCode
+                        + " code, " + msDelta + "ms");
             }
-            Log.d(TAG, uri + ", " + requestBody.length + "b sent, "
-                    + (reqData != null ? reqData.length : 0) + "b recv, " + statCode + " code, "
-                    + msDelta + "ms");
         }
 
         if (!TextUtils.isEmpty(error) || reqData == null) {
@@ -132,12 +150,9 @@ public class WebEngine extends ConnectionEngine {
 
     @Override
     public void shutdownConnection() {
-        if (mHttpClient != null) {
-            ClientConnectionManager cm = mHttpClient.getConnectionManager();
-            if (cm != null) {
-                cm.shutdown();
-                mHttpClient = null;
-            }
+        if (mConn != null) {
+            mConn.disconnect();
+            mConn = null;
         }
     }
 
