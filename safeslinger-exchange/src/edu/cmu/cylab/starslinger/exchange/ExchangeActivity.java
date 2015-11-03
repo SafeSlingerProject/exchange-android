@@ -357,9 +357,7 @@ public class ExchangeActivity extends BaseActivity {
         @Override
         protected String doInBackground(String... arg0) {
             publishProgress(getString(R.string.prog_RequestingUserId));
-            if (!mProt.doRequestUserId()) {
-                showError(R.string.error_ServerNotResponding);
-            }
+            mProt.doRequestUserId();
             return null;
         }
 
