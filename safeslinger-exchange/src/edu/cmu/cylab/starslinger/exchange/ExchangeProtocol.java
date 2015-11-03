@@ -709,6 +709,30 @@ public class ExchangeProtocol {
         return decryptMemData;
     };
 
+    public boolean isCommitPhaseComplete() {
+        return mNumUsersCommit < mNumUsers;
+    }
+
+    public boolean isDataPhaseComplete() {
+        return mNumUsersData < mNumUsers;
+    }
+
+    public boolean isSigsBadPhaseComplete() {
+        return mNumUsersSigs > 0;
+    }
+
+    public boolean isSigsPhaseComplete() {
+        return mNumUsersSigs < mNumUsers;
+    }
+
+    public boolean isNodePhaseComplete() {
+        return curNodePos < mNumUsers;
+    }
+
+    public boolean isMatchPhaseComplete() {
+        return mNumUsersMatchNonces < mNumUsers;
+    }
+
     // Private Methods /////////////////////////////////////////
 
     private static byte[] appendServerBytes(byte[] dest, byte[] src) {

@@ -147,7 +147,7 @@ public class ExchangeController {
             boolean postCommit = true;
             long getCommitWait = System.currentTimeMillis();
             int attempt = 0;
-            while (protocol.getNumUsersCommit() < protocol.getNumUsers()) {
+            while (protocol.isCommitPhaseComplete()) {
                 if (isCanceled()) {
                     return false;
                 }
@@ -172,7 +172,7 @@ public class ExchangeController {
                     return handleError(R.string.error_TimeoutWaitingForAllMembers);
                 }
 
-                if (protocol.getNumUsersCommit() < protocol.getNumUsers()) {
+                if (protocol.isCommitPhaseComplete()) {
                     doSleepBackoff(attempt, intervalStart, getCommitWait);
                 }
             }
@@ -197,7 +197,7 @@ public class ExchangeController {
             boolean postData = true;
             long getDataWait = System.currentTimeMillis();
             int attempt = 0;
-            while (protocol.getNumUsersData() < protocol.getNumUsers()) {
+            while (protocol.isDataPhaseComplete()) {
                 if (isCanceled()) {
                     return false;
                 }
@@ -222,7 +222,7 @@ public class ExchangeController {
                     return handleError(R.string.error_TimeoutWaitingForAllMembers);
                 }
 
-                if (protocol.getNumUsersData() < protocol.getNumUsers()) {
+                if (protocol.isDataPhaseComplete()) {
                     doSleepBackoff(attempt, intervalStart, getDataWait);
                 }
             }
@@ -266,7 +266,7 @@ public class ExchangeController {
         try {
             long getSigsWait = System.currentTimeMillis();
             int attempt = 0;
-            while (protocol.getNumUsersSigs() > 0) {
+            while (protocol.isSigsBadPhaseComplete()) {
                 if (isCanceled()) {
                     return false;
                 }
@@ -290,7 +290,7 @@ public class ExchangeController {
                     return handleError(R.string.error_TimeoutWaitingForAllMembers);
                 }
 
-                if (protocol.getNumUsersSigs() > 0) {
+                if (protocol.isSigsBadPhaseComplete()) {
                     doSleepBackoff(attempt, intervalStart, getSigsWait);
                 }
             }
@@ -310,7 +310,7 @@ public class ExchangeController {
             boolean postSig = true;
             long getSigsWait = System.currentTimeMillis();
             int attempt = 0;
-            while (protocol.getNumUsersSigs() < protocol.getNumUsers()) {
+            while (protocol.isSigsPhaseComplete()) {
                 if (isCanceled()) {
                     return false;
                 }
@@ -335,7 +335,7 @@ public class ExchangeController {
                     return handleError(R.string.error_TimeoutWaitingForAllMembers);
                 }
 
-                if (protocol.getNumUsersSigs() < protocol.getNumUsers()) {
+                if (protocol.isSigsPhaseComplete()) {
                     doSleepBackoff(attempt, intervalStart, getSigsWait);
                 }
             }
@@ -367,7 +367,7 @@ public class ExchangeController {
 
             long getKeyNodesWait = System.currentTimeMillis();
             int attempt = 0;
-            while (protocol.getCurNodePos() < protocol.getNumUsers()) {
+            while (protocol.isNodePhaseComplete()) {
                 if (isCanceled()) {
                     return false;
                 }
@@ -418,7 +418,7 @@ public class ExchangeController {
             boolean postNonce = true;
             long getMatchNoncesWait = System.currentTimeMillis();
             int attempt = 0;
-            while (protocol.getNumUsersMatchNonces() < protocol.getNumUsers()) {
+            while (protocol.isMatchPhaseComplete()) {
                 if (isCanceled()) {
                     return false;
                 }
@@ -443,7 +443,7 @@ public class ExchangeController {
                     return handleError(R.string.error_TimeoutWaitingForAllMembers);
                 }
 
-                if (protocol.getNumUsersMatchNonces() < protocol.getNumUsers()) {
+                if (protocol.isMatchPhaseComplete()) {
                     doSleepBackoff(attempt, intervalStart, getMatchNoncesWait);
                 }
             }
