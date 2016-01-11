@@ -32,34 +32,34 @@
 
     <string name="choice_NumUsers">ユーザ数%d人</string>
 
-    <string name="error_AllMembersMustUpgrade">一部のメンバーは、古いバージョンを使用しています。すべてのメンバーは、最新バージョンにアップグレードする必要があります。</string>
-    <string name="error_AllMembersMustUpgradeBadPushToken">すべてのメンバーは、いくつかの古いプッシュ登録フォーマットを使用している、アップグレードする必要があります。</string>
+    <string name="error_AllMembersMustUpgrade">一部のメンバーは、古いバージョンを使用しています。すべてのメンバーが、最新バージョンにアップグレードする必要があります。</string>
+    <string name="error_AllMembersMustUpgradeBadPushToken">すべてのメンバーがアップグレードする必要があります。一部、古いプッシュ登録フォーマットを使用してます。</string>
     <string name="error_CorrectYourInternetConnection">インターネットを利用できません。設定を確認してください。</string>
     <string name="error_ExchangeProtocolTimeoutExceeded">交換のタイムアウトを超過しました。再度交換を開始します。</string>
     <string name="error_HttpCode">HTTPエラーが発生しました：%d</string>
     <string name="error_InvalidCommitVerify">誤ったデータが交換で見つかりました。再度交換を開始します。</string>
     <string name="error_InvalidCommonUserId">正の整数を入力してください。</string>
-    <string name="error_LocalGroupCommitDiffer">あなたは、フレーズの違いを報告しています。再度交換を開始します。</string>
+    <string name="error_LocalGroupCommitDiffer">フレーズの違いを報告しました。再度交換を開始します。</string>
     <string name="error_MinUsersRequired">データを交換するためには最低%d人必要です。</string>
-    <string name="error_MoreDataThanUsers">予期しないデータが交換で見つかりました。再度交換を開始します。</string>
-    <string name="error_NoDataToExchange">交換が必要なデータが欠落しています。</string>
-    <string name="error_NoWordListSelected">続行する前に、フレーズのいずれかを選択する必要があります。</string>
+    <string name="error_MoreDataThanUsers">交換で予期しないデータが見つかりました。再度交換を開始します。</string>
+    <string name="error_NoDataToExchange">交換に必要なデータが欠落しています。</string>
+    <string name="error_NoWordListSelected">続行する前に、いずれかのフレーズを選択する必要があります。</string>
     <string name="error_OtherGroupCommitDiffer">誰かがフレーズの違いを報告しました。再度交換を開始します。</string>
-    <string name="error_OutOfMemoryError">メモリは、この操作を完了するには低すぎます。</string>
-    <string name="error_ServerAppMessage">サーバーメッセージ：%s</string>
+    <string name="error_OutOfMemoryError">この操作を完了するには、メモリが少なすぎます。</string>
+    <string name="error_ServerAppMessage">サーバーメッセージ: %s</string>
     <string name="error_ServerNotResponding">サーバが応答しませんでした。</string>
     <string name="error_TimeoutWaitingForAllMembers">いくつかのグループのメンバーがデータを追加するのを待っていましたがタイムアウトになりました。</string>
     <string name="error_WebCancelledByUser">ユーザはサーバ要求をキャンセルしました。</string>
 
-    <string name="help_size">一緒にデータを交換しようとしている人の数を選択してOKを押します。</string>
-    <string name="help_userid">この画面上でこの番号は、ユーザーの固有のグループを作成するために使用されます。その後、すべてのユーザーが同じ最小の番号を押し、[OK]を入力する必要があり、すべてのユーザーの画面で数値を確認します。</string>
-    <string name="help_verify">さて、あなたはすべてのユーザーとこれらの3ワードフレーズのいずれかと一致する必要があります。すべてのユーザーが同じ共通のフレーズを選択し、[次へ]を押す必要があります。</string>
+    <string name="help_size">一緒にデータを交換しようとしている人の数を選択してOKを押してください。</string>
+    <string name="help_userid">この画面上のこの数は、ユーザーの固有のグループを作成するために使用されます。すべてのユーザーの画面で数を確認します。その後、すべてのユーザーが同じ最小の数を押し、OKを押す必要があります。</string>
+    <string name="help_verify">さて、すべてのユーザーと、これらの3語のフレーズのいずれかと一致する必要があります。すべてのユーザーが同じ共通のフレーズを選択し、次へを押す必要があります。</string>
 
     <string name="label_CompareScreensNDevices">%sデバイスの画面を比較してください。</string>
-    <string name="label_NumericModeHint">英語以外の</string>
-    <string name="label_PromptInstruct">この番号は、ユーザーの固有のグループを作成するために使用されます。比較して、[すべてのユーザーの中で最も低い数値を入力します。</string>
+    <string name="label_NumericModeHint">英語以外</string>
+    <string name="label_PromptInstruct">この数は、ユーザーの固有のグループを作成するために使用されます。比較して、すべてのユーザーの中で最も小さい数を入力します。</string>
     <string name="label_ReceivedNItems">%d項目を受信</string>
-    <string name="label_UserIdHint">最下位</string>
+    <string name="label_UserIdHint">最小</string>
     <string name="label_VerifyInstruct">すべての携帯電話は、3つのフレーズのいずれかと一致する必要があります。比較して一致するフレーズを選択してください。</string>
 
     <string name="lib_name">SafeSlinger交換</string>
