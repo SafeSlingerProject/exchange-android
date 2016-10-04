@@ -52,6 +52,7 @@ import android.os.Handler;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.WindowManager.BadTokenException;
+
 import edu.cmu.cylab.starslinger.exchange.ExchangeConfig.extra;
 
 /***
@@ -150,11 +151,15 @@ public class ExchangeActivity extends BaseActivity {
         }
 
         int numUsersIn = 0;
+        byte[] groupNameIn = null;
+        byte[] attemptNameIn = null;
         Bundle extras = savedInstanceState != null ? savedInstanceState : getIntent().getExtras();
         if (extras != null) {
             mUserData = extras.getByteArray(extra.USER_DATA);
             mHostName = extras.getString(extra.HOST_NAME);
             numUsersIn = extras.getInt(extra.NUM_USERS, 0);
+            groupNameIn = extras.getByteArray(extra.GROUP_NAME);
+            attemptNameIn = extras.getByteArray(extra.ATTEMPT_NAME);
         }
 
         // only initialize on new requests, this activity has very little ui
@@ -184,6 +189,25 @@ public class ExchangeActivity extends BaseActivity {
             // new call from 3rd party, proceed
             mProt = new ExchangeController(this, mHostName);
 
+            // validate custom external grouping requests
+            int groupId = 0; // default case, no group or attempt name set
+            if (groupNameIn != null && groupNameIn.length != 0 && attemptNameIn != null && attemptNameIn.length != 0) {
+                // create group id from group name and attempt name using first 32 bits of hash
+                byte[] grpIdHash = CryptoAccess.computeSha3Hash2(groupNameIn, attemptNameIn);
+                // group id on server is currently limited to 32 bits
+                groupId = Math.abs((grpIdHash[3] & 0xFF |
+                        (grpIdHash[2] & 0xFF) << 8 |
+                        (grpIdHash[1] & 0xFF) << 16 |
+                        (grpIdHash[0] & 0xFF) << 24));
+                mProt.setFederatedIdentities(true); // set to true for external grouping
+            } else if ((groupNameIn == null || groupNameIn.length == 0) && (attemptNameIn != null && attemptNameIn.length != 0)) {
+                showError("A unique Group Name and Attempt Name combination are required to avoid grouping collisions on the server.");
+                return;
+            } else if ((attemptNameIn == null || attemptNameIn.length == 0) && (groupNameIn != null && groupNameIn.length != 0)) {
+                showError("A unique Group Name and Attempt Name combination are required to avoid grouping collisions on the server.");
+                return;
+            }
+
             // initialize exchange
             if (numUsersIn == 0) {
                 // default mode, uninitialized number of users
@@ -194,9 +218,9 @@ public class ExchangeActivity extends BaseActivity {
                     && numUsersIn <= ExchangeConfig.MAX_USERS) {
                 // optional mode, 3rd party will pass in num users
                 if (handled(mProt.doGenerateCommitment(numUsersIn, mUserData))) {
+                    // if unique group id instance set > 0, this task will skip grouping step
                     AssignUserTask assignUser = new AssignUserTask();
-                    assignUser.execute(new String());
-                    // TODO: option can be removed for combo-lock UI
+                    assignUser.execute(groupId);
                 }
             } else {
                 // reset and error, number out of range
@@ -352,10 +376,12 @@ public class ExchangeActivity extends BaseActivity {
         }
     }
 
-    private class AssignUserTask extends AsyncTask<String, String, String> {
+    private class AssignUserTask extends AsyncTask<Integer, String, String> {
+        int mGroupId = 0;
 
         @Override
-        protected String doInBackground(String... arg0) {
+        protected String doInBackground(Integer... arg0) {
+            mGroupId = arg0[0];
             publishProgress(getString(R.string.prog_RequestingUserId));
             mProt.doRequestUserId();
             return null;
@@ -370,7 +396,15 @@ public class ExchangeActivity extends BaseActivity {
         protected void onPostExecute(String result) {
             endProgress();
             if (handled(!mProt.isError()) && !mProt.isCanceled()) {
-                showLowestUserIdPrompt(mProt.getUserId());
+                if (mGroupId == 0) {
+                    // grouping id not provided, start OOB grouping
+                    showLowestUserIdPrompt(mProt.getUserId());
+                } else {
+                    // grouping provided, submit to server...
+                    mProt.setUserIdLink(mGroupId); // save
+                    SyncCommitsDataTask syncCommitData = new SyncCommitsDataTask();
+                    syncCommitData.execute(new String());
+                }
             }
         }
     }
@@ -595,7 +629,7 @@ public class ExchangeActivity extends BaseActivity {
                     dialog.dismiss();
                     if (handled(mProt.doGenerateCommitment(mProt.getNumUsers(), mUserData))) {
                         AssignUserTask assignUser = new AssignUserTask();
-                        assignUser.execute(new String());
+                        assignUser.execute(0);
                     }
                 } else {
                     // reset and error

@@ -29,6 +29,8 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Locale;
+
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
@@ -44,6 +46,7 @@ public class ExchangeController {
     private Context mCtx;
     private String mHost = null;
     private ExchangeProtocol protocol;
+    private boolean mFederatedIdentities = false;
 
     public ExchangeController(Context ctx, String hostName) {
         mCtx = ctx;
@@ -609,8 +612,37 @@ public class ExchangeController {
         protocol.setHashSelection(hashSelection);
     }
 
-    public CharSequence getStatusBanner(Activity act) {
-        return protocol.getStatusBanner(act);
+    public String getStatusBanner(Activity act) {
+        StringBuilder banner = new StringBuilder();
+        if (protocol.getHash() != null) {
+            byte[] selectedHash = new byte[3];
+            if (protocol.getHashSelection() == 0) {
+                selectedHash = protocol.getHash();
+            } else if (protocol.getHashSelection() == 1) {
+                selectedHash = protocol.getDecoyHash(1);
+            } else if (protocol.getHashSelection() == 2) {
+                selectedHash = protocol.getDecoyHash(2);
+            }
+            boolean english = Locale.getDefault().getLanguage().equals("en");
+            if (english) {
+                banner.append(WordList.getWordList(selectedHash, 3)).append("\n")
+                        .append(WordList.getNumbersList(selectedHash, 3));
+            } else {
+                banner.append(WordList.getNumbersList(selectedHash, 3)).append("\n")
+                        .append(WordList.getWordList(selectedHash, 3));
+            }
+        } else if (protocol.getNumUsers() > 0) {
+            banner.append(String.format(act.getString(R.string.choice_NumUsers), protocol.getNumUsers()));
+            if (protocol.getUserIdLink() > 0 && !mFederatedIdentities) {
+                // show lowest id only if user typed it in, otherwise the hash value is too long and confusing to the UX
+                banner.append(", ").append(act.getString(R.string.label_UserIdHint).toLowerCase())
+                        .append(" ").append(protocol.getUserIdLink());
+            }
+        }
+        return banner.toString();
     }
 
+    public void setFederatedIdentities(boolean federatedIdentities) {
+        mFederatedIdentities = federatedIdentities;
+    }
 }

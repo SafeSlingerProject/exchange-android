@@ -58,18 +58,30 @@ Call the `ExchangeActivity` with required extras `USER_DATA` and `HOST_NAME`. Th
 
     private void beginExchange(String hostName, byte[] mySecret) {
         Intent intent = new Intent(getActivity(), ExchangeActivity.class);
-        intent.putExtra(ExchangeConfig.extra.USER_DATA, mySecret);
-        intent.putExtra(ExchangeConfig.extra.HOST_NAME, hostName);
+        intent.putExtra(ExchangeConfig.extra.USER_DATA, mySecret); // byte[]
+        intent.putExtra(ExchangeConfig.extra.HOST_NAME, hostName); // String
         startActivityForResult(intent, RESULT_EXCHANGE);
     }
     
-Optionally, you may pass in the number of users using the `NUM_USERS` extra. The UX will ask for the grouping number and 3-word phrase only. 
+OPTION 1: You may pass in the number of users using the `NUM_USERS` extra. The UX will ask for the grouping number and 3-word phrase only. 
 
     private void beginExchange(String hostName, byte[] mySecret, int numUsersIn) {
         Intent intent = new Intent(getActivity(), ExchangeActivity.class);
-        intent.putExtra(ExchangeConfig.extra.USER_DATA, mySecret);
-        intent.putExtra(ExchangeConfig.extra.HOST_NAME, hostName);
-        intent.putExtra(ExchangeConfig.extra.NUM_USERS, numUsersIn);
+        intent.putExtra(ExchangeConfig.extra.USER_DATA, mySecret); // byte[]
+        intent.putExtra(ExchangeConfig.extra.HOST_NAME, hostName); // String
+        intent.putExtra(ExchangeConfig.extra.NUM_USERS, numUsers); // int
+        startActivityForResult(intent, RESULT_EXCHANGE);
+    }
+    
+OPTION 2: For the use case where developers use an external grouping mechanisim and have a method of sychronizing a unique group name and attempt name you may use the `GROUP_NAME` and `ATTEMPT_NAME` extras. The UX will ask for the 3-word phrase only. `GROUP_NAME` can be any UUID which uniquely identifies this group and which each member knows, and `ATTEMPT_NAME` should be any value which can be enumerated and sychronized to all group members before starting the exchange. **WARNING:** `ATTEMPT_NAME` must be the same for all members, and must be iterated on each exchange attempt, otherwise previous exchange attempts will merge with the current group resulting in a false-negative.
+
+    private void beginExchange(String hostName, byte[] mySecret, int numUsersIn) {
+        Intent intent = new Intent(getActivity(), ExchangeActivity.class);
+        intent.putExtra(ExchangeConfig.extra.USER_DATA, mySecret); // byte[]
+        intent.putExtra(ExchangeConfig.extra.HOST_NAME, hostName); // String
+        intent.putExtra(ExchangeConfig.extra.NUM_USERS, numUsers); // int
+        intent.putExtra(ExchangeConfig.extra.GROUP_NAME, groupName); // byte[]
+        intent.putExtra(ExchangeConfig.extra.ATTEMPT_NAME, attemptName); // byte[]
         startActivityForResult(intent, RESULT_EXCHANGE);
     }
 

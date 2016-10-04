@@ -50,7 +50,7 @@ public class ExchangeConfig {
     public static final int MS_READ_PER_CHAR = 50; // 50 msrpc ~ 20 cps
     public static final String LOG_TAG = "SafeSlinger-Exchange";
 
-    // internal interprocess communication...
+    // internal interprocess communication.../**/
     public static final class extra {
         public static final String DECOY1_HASH = "DecoyHash1";
         public static final String DECOY2_HASH = "DecoyHash2";
@@ -66,6 +66,8 @@ public class ExchangeConfig {
         public static final String USER_ID = "UserId";
         public static final String HOST_NAME = "HostName";
         public static final String NUM_USERS = "NumUsers";
+        public static final String GROUP_NAME = "GroupName";
+        public static final String ATTEMPT_NAME = "AttemptName";
     }
 
     public static int getMinVersionCode() {

@@ -32,13 +32,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.util.BitSet;
-import java.util.Locale;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-
-import android.content.Context;
 
 public class ExchangeProtocol {
     private byte[] mEncData = null;
@@ -157,7 +154,7 @@ public class ExchangeProtocol {
 
     /**
      * send commitment, receives unique short user id
-     * 
+     *
      * @throws NoDataToExchangeException
      */
     public byte[] outMessageAssign() throws NoDataToExchangeException {
@@ -189,7 +186,7 @@ public class ExchangeProtocol {
      * send our own matches once, list of all users we have, gathers all others
      * when available receives the group id, total user number (including ours),
      * actual user number, list of users we did not get yet
-     * 
+     *
      * @param postCommit
      * @throws NoDataToExchangeException
      */
@@ -340,20 +337,11 @@ public class ExchangeProtocol {
     private void endValidationData() throws MoreDataThanUsersException, HashValidationException,
             InvalidCommitVerifyException, AssignDecoysException {
 
-        boolean match = false;
-        int lowest = Integer.MAX_VALUE;
-        for (int i = 0; i < usridList.length; i++) {
-            if (usridList[i] == mUsrIdLink)
-                match = true; // record match
-            if (usridList[i] < lowest)
-                lowest = usridList[i]; // record lowest
-        }
-        if (!match) {
-            throw new MoreDataThanUsersException();
-        }
-        if (lowest != mUsrIdLink) {
-            throw new MoreDataThanUsersException();
-        }
+        // Requirement for matching user ID to group ID and lowest group ID number validation
+        // has been removed to allow developers to use their own grouping mechanisms.
+        // Lowest number grouping is a UX suggestion for non-federated identity use cases.
+        // Federated identity use cases can bypass this step by submitting a unique group
+        // identity id and attempt id to ensure no group collisions on the server.
 
         mPackedData = dataList;
 
@@ -707,7 +695,7 @@ public class ExchangeProtocol {
             decryptMemData[i] = mCrypto.decryptData(encryptMemData[i], key);
         }
         return decryptMemData;
-    };
+    }
 
     public boolean isCommitPhaseComplete() {
         return mNumUsersCommit < mNumUsers;
@@ -842,8 +830,8 @@ public class ExchangeProtocol {
             // pick words that do not collide with others in the bit vector
             // also assure that we correctly seek back to the first byte if
             // collisions exceed the maximum byte value
-            byte[] newHash = CryptoAccess.computeSha3Hash2(new byte[] {
-                (byte) n
+            byte[] newHash = CryptoAccess.computeSha3Hash2(new byte[]{
+                    (byte) n
             }, hashVal);
             // decoy 1
             mDecoyHash1[0] = getNextClearByte(even, newHash[0]);
@@ -873,35 +861,6 @@ public class ExchangeProtocol {
         if (next >= WordList.wordList.length)
             next = bits.nextClearBit(0);
         return WordList.itob(next);
-    }
-
-    public String getStatusBanner(Context ctx) {
-        StringBuilder banner = new StringBuilder();
-        if (mHashVal != null) {
-            byte[] selectedHash = new byte[3];
-            if (mHashSelection == 0) {
-                selectedHash = mHashVal;
-            } else if (mHashSelection == 1) {
-                selectedHash = mDecoyHash1;
-            } else if (mHashSelection == 2) {
-                selectedHash = mDecoyHash2;
-            }
-            boolean english = Locale.getDefault().getLanguage().equals("en");
-            if (english) {
-                banner.append(WordList.getWordList(selectedHash, 3)).append("\n")
-                        .append(WordList.getNumbersList(selectedHash, 3));
-            } else {
-                banner.append(WordList.getNumbersList(selectedHash, 3)).append("\n")
-                        .append(WordList.getWordList(selectedHash, 3));
-            }
-        } else if (mNumUsers > 0) {
-            banner.append(String.format(ctx.getString(R.string.choice_NumUsers), mNumUsers));
-            if (mUsrIdLink > 0) {
-                banner.append(", ").append(ctx.getString(R.string.label_UserIdHint).toLowerCase())
-                        .append(" ").append(mUsrIdLink);
-            }
-        }
-        return banner.toString();
     }
 
     // Accessors /////////////////////////////////////////
@@ -987,5 +946,9 @@ public class ExchangeProtocol {
 
     public void setHashSelection(int hashSelection) {
         mHashSelection = hashSelection;
+    }
+
+    public int getHashSelection() {
+        return mHashSelection;
     }
 }
